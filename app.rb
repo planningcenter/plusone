@@ -20,14 +20,17 @@ def get_labels(owner, repo, number)
     .map { |l| l['name'] }
 end
 
-LABELS = ['+1', '+2']
-
-get '/plusone' do
-  'Create a GitHub webhook pointing at this URL.'
+def assign_owner(payload)
+  return unless (pr = payload['pull_request'])
+  return if pr['assignee']
+  return unless (number = pr['number'])
+  return unless (repo = payload['repository'])
+  return unless (owner = repo.fetch('owner', {})['login'])
+  puts "assigning owner"
+  GH.issues.edit(owner, repo['name'], number, assignee: pr['user']['login'])
 end
 
-post '/plusone' do
-  payload = JSON.parse(request.body.read)
+def update_labels(payload)
   return unless payload.fetch('comment', {})['body'] =~ /:\+1:/
   return unless (number = payload.fetch('issue', {})['number'])
   return unless (repo = payload['repository'])
@@ -42,6 +45,22 @@ post '/plusone' do
   ((existing & LABELS) - [label]).each do |old_label|
     puts "removing #{old_label}"
     GH.issues.labels.remove owner, repo['name'], number, label_name: old_label
+  end
+end
+
+LABELS = ['+1', '+2']
+
+get '/plusone' do
+  'Create a GitHub webhook pointing at this URL.'
+end
+
+post '/plusone' do
+  payload = JSON.parse(request.body.read)
+  case payload['action']
+  when 'opened'
+    assign_owner(payload)
+  when 'created'
+    update_labels(payload)
   end
   'done'
 end
