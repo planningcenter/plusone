@@ -22,6 +22,10 @@ end
 
 LABELS = ['+1', '+2']
 
+get '/plusone' do
+  'Create a GitHub webhook pointing at this URL.'
+end
+
 post '/plusone' do
   payload = JSON.parse(request.body.read)
   return unless payload.fetch('comment', {})['body'] =~ /:\+1:/
