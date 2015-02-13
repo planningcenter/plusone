@@ -9,7 +9,7 @@ get '/' do
 end
 
 def count_thumbs(owner, repo, number)
-  comments = GH.issues.comments.list(owner, repo, number)
+  comments = GH.issues.comments.list(owner, repo, number: number)
   thumbs = comments.select { |c| c['body'].include?(':+1:') }
   thumbs.uniq { |c| c['user']['login'] }.size
 end
