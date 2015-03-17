@@ -8,9 +8,26 @@ Deploy to Heroku.
 
 Set the ENV variable `GH_AUTH_TOKEN`.
 
-Add a webhook with the following two events selected:
+There are two separate webhooks you can set up (they work independent of each other):
 
+### Assignment and +1, +2 Labels
+
+This webhook:
+
+1. assigns a new PR to the user who opened it
+2. adds `+1` and `+2` labels if someone comments on the PR with a thumb `:+1`
+
+Add a webhook to your repo pointing to `http://your-app.herokuapp.com/plusone` with the following events selected:
+
+* Pull Request
 * Issue comment
 * Pull Request review comment
 
-The Payload URL for the webhook should be `http://your-app.herokuapp.com/plusone`.
+### Staging Label
+
+This webhook checks to see if your PR has been merged into the "staging" branch, and if so, adds the label "Staging".
+
+Add a webhook to your repo pointing to `http://your-app.herokuapp.com/staged` with the following events selected:
+
+* Pull Request
+* Push
