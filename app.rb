@@ -4,6 +4,8 @@ require 'github_api'
 
 LABELS = ['+1', '+2']
 THUMB_REGEX = /:\+1:|^\+1/
+STAGING_BRANCH = 'staging'
+STAGING_LABEL = 'staging'
 
 GH = Github.new(oauth_token: ENV['GH_AUTH_TOKEN'])
 
@@ -54,6 +56,29 @@ def update_labels(payload)
   end
 end
 
+def apply_staging_label(payload)
+  return unless (repo = payload['repository'])
+  return unless (owner = repo.fetch('owner', {}))
+  return unless (owner_name = owner['login'] || owner['name'])
+  GH.pull_requests.list(owner_name, repo['name']).each do |pr|
+    begin
+      compare = GH.repos.commits.compare(owner_name, repo['name'], CGI.escape(pr.head.ref), STAGING_BRANCH)
+    rescue Github::Error::NotFound
+      puts "#{STAGING_BRANCH} not found"
+      return
+    end
+    on_staging = %w(ahead identical).include?(compare['status'])
+    existing = get_labels(owner_name, repo, pr.number)
+    p([pr.number, on_staging, existing])
+    if on_staging && !existing.include?(STAGING_LABEL)
+      puts "adding #{STAGING_LABEL} to PR #{pr.number}"
+      GH.issues.labels.add(owner_name, repo['name'], pr.number, STAGING_LABEL)
+    elsif !on_staging && existing.include?(STAGING_LABEL)
+      puts "removing #{STAGING_LABEL} from PR #{pr.number}"
+      GH.issues.labels.remove(owner_name, repo['name'], pr.number, label_name: STAGING_LABEL)
+    end
+  end
+end
 
 get '/plusone' do
   'Create a GitHub webhook pointing at this URL with these events selected: Pull Request, Issue comment, Pull Request review comment'
@@ -67,5 +92,15 @@ post '/plusone' do
   when 'created'
     update_labels(payload)
   end
+  'done'
+end
+
+get '/staged' do
+  'Create a GitHub webhook pointing at this URL with these events selected: Pull Request, Push'
+end
+
+post '/staged' do
+  payload = JSON.parse(request.body.read)
+  apply_staging_label(payload)
   'done'
 end
