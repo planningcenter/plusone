@@ -56,7 +56,7 @@ end
 
 
 get '/plusone' do
-  'Create a GitHub webhook pointing at this URL.'
+  'Create a GitHub webhook pointing at this URL with these events selected: Pull Request, Issue comment, Pull Request review comment'
 end
 
 post '/plusone' do
