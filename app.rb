@@ -45,11 +45,11 @@ def update_labels(payload)
   label = "+#{count}"
   existing = get_labels(owner, repo, number)
   ((existing & LABELS) - [label]).each do |old_label|
-    puts "removing #{old_label}"
-    GH.issues.labels.remove owner, repo['name'], number, label_name: old_label
+    puts "removing #{old_label} from PR #{number}"
+    GH.issues.labels.remove(owner, repo['name'], number, label_name: old_label)
   end
   unless existing.include?(label)
-    puts "adding #{label}"
+    puts "adding #{label} to PR #{number}"
     GH.issues.labels.add(owner, repo['name'], number, label)
   end
 end
