@@ -5,7 +5,7 @@ require 'github_api'
 LABELS = ['+1', '+2']
 THUMB_REGEX = /:\+1:|^\+1/
 STAGING_BRANCH = 'staging'
-STAGING_LABEL = 'staging'
+STAGING_LABEL = 'Staging'
 
 GH = Github.new(oauth_token: ENV['GH_AUTH_TOKEN'])
 
