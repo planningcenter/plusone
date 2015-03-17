@@ -19,7 +19,7 @@ def count_thumbs(owner, repo, number)
   [
     thumbs.uniq { |c| c['user']['login'] }.size, # sometimes 0 :-(
     1
-  ].min
+  ].max
 end
 
 def get_labels(owner, repo, number)
