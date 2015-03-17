@@ -31,3 +31,7 @@ Add a webhook to your repo pointing to `http://your-app.herokuapp.com/staged` wi
 
 * Pull Request
 * Push
+
+## Copyright & License
+
+Copyright 2015 Tim Morgan, licensed MIT. See LICENSE file in this repo.
