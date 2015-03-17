@@ -3,6 +3,7 @@ require 'json'
 require 'github_api'
 
 LABELS = ['+1', '+2']
+THUMB_REGEX = /:\+1:|^\+1/
 
 GH = Github.new(oauth_token: ENV['GH_AUTH_TOKEN'])
 
@@ -12,7 +13,7 @@ end
 
 def count_thumbs(owner, repo, number)
   comments = GH.issues.comments.list(owner, repo, number: number)
-  thumbs = comments.select { |c| c['body'].include?(':+1:') }
+  thumbs = comments.select { |c| c['body'] =~ THUMB_REGEX }
   [
     thumbs.uniq { |c| c['user']['login'] }.size, # sometimes 0 :-(
     1
@@ -36,7 +37,7 @@ def assign_owner(payload)
 end
 
 def update_labels(payload)
-  return unless payload.fetch('comment', {})['body'] =~ /:\+1:/
+  return unless payload.fetch('comment', {})['body'] =~ THUMB_REGEX
   return unless (number = payload.fetch('issue', {})['number'])
   return unless (repo = payload['repository'])
   return unless (owner = repo.fetch('owner', {})['login'])
