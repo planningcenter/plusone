@@ -1,9 +1,10 @@
 require 'sinatra'
 require 'json'
 require 'github_api'
+require 'pp'
 
 LABELS = ['+1', '+2']
-THUMB_REGEX = /:\+1:|^\+1/
+THUMB_REGEX = /:\+1:|^\+1|\u{1F44D}/
 STAGING_BRANCH = 'staging'
 STAGING_LABEL = 'Staging'
 
@@ -86,6 +87,7 @@ end
 
 post '/plusone' do
   payload = JSON.parse(request.body.read)
+  pp payload
   case payload['action']
   when 'opened'
     assign_owner(payload)
