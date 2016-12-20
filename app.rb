@@ -29,6 +29,22 @@ def get_labels(owner, repo, number)
     .map { |l| l['name'] }
 end
 
+def get_reviews(owner, repo, number)
+  # github_api doesn't support this yet
+  conn = Faraday.new(
+    url: 'https://api.github.com',
+    headers: { Accept: 'application/vnd.github.black-cat-preview+json' }
+  )
+  JSON.parse(conn.get("/repos/#{owner}/#{repo}/pulls/#{number}/reviews?access_token=#{ENV['GH_AUTH_TOKEN']}").body)
+end
+
+def count_approvals(owner, repo, number)
+  approvals = get_reviews(owner, repo, number).select do |review|
+    review['state'].to_s.downcase == 'approved' || review['body'].to_s =~ THUMB_REGEX
+  end
+  approvals.size
+end
+
 def assign_owner(payload)
   return unless (pr = payload['pull_request'])
   return if pr['assignee']
@@ -40,11 +56,14 @@ def assign_owner(payload)
 end
 
 def update_labels(payload)
-  return unless payload.fetch('comment', {})['body'] =~ THUMB_REGEX
-  return unless (number = payload.fetch('issue', {})['number'])
+  body = payload.fetch('comment', {})['body'] || payload.fetch('review', {})['body']
+  approved = payload.fetch('review', {})['state'] == 'approved'
+  return unless body =~ THUMB_REGEX || approved
+  return unless (number = payload.fetch('issue', {})['number'] || payload.fetch('pull_request', {})['number'])
   return unless (repo = payload['repository'])
   return unless (owner = repo.fetch('owner', {})['login'])
-  count = [LABELS.size, count_thumbs(owner, repo['name'], number)].min
+  actual_count = count_thumbs(owner, repo['name'], number) + count_approvals(owner, repo['name'], number)
+  count = [LABELS.size, actual_count].min
   label = "+#{count}"
   existing = get_labels(owner, repo, number)
   ((existing & LABELS) - [label]).each do |old_label|
@@ -91,7 +110,7 @@ post '/plusone' do
   case payload['action']
   when 'opened'
     assign_owner(payload)
-  when 'created'
+  when 'created', 'submitted'
     update_labels(payload)
   end
   'done'
