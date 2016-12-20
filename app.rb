@@ -17,10 +17,7 @@ end
 def count_thumbs(owner, repo, number)
   comments = GH.issues.comments.list(owner, repo, number: number)
   thumbs = comments.select { |c| c['body'] =~ THUMB_REGEX }
-  [
-    thumbs.uniq { |c| c['user']['login'] }.size, # sometimes 0 :-(
-    1
-  ].max
+  thumbs.uniq { |c| c['user']['login'] }.size
 end
 
 def get_labels(owner, repo, number)
