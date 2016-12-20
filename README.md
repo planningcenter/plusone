@@ -19,9 +19,10 @@ This webhook:
 
 Add a webhook to your repo pointing to `http://your-app.herokuapp.com/plusone` with the following events selected:
 
-* Pull Request
+* Pull request
+* Pull request review comment
 * Issue comment
-* Pull Request review comment
+* Pull request review
 
 ### Staging Label
 
