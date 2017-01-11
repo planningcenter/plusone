@@ -61,6 +61,7 @@ def update_labels(payload)
   return unless (owner = repo.fetch('owner', {})['login'])
   actual_count = count_thumbs(owner, repo['name'], number) + count_approvals(owner, repo['name'], number)
   count = [LABELS.size, actual_count].min
+  return if count == 0
   label = "+#{count}"
   existing = get_labels(owner, repo, number)
   ((existing & LABELS) - [label]).each do |old_label|
@@ -103,12 +104,14 @@ end
 
 post '/plusone' do
   payload = JSON.parse(request.body.read)
-  pp payload
-  case payload['action']
-  when 'opened'
-    assign_owner(payload)
-  when 'created', 'submitted'
-    update_labels(payload)
+  fork do
+    sleep 0.5 # give their API just a bit to get caught up
+    case payload['action']
+    when 'opened'
+      assign_owner(payload)
+    when 'created', 'submitted'
+      update_labels(payload)
+    end
   end
   'done'
 end
