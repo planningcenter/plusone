@@ -87,7 +87,7 @@ def apply_staging_label(payload)
     end
     on_staging = %w(ahead identical).include?(compare['status'])
     existing = get_labels(owner_name, repo, pr.number)
-    p([pr.number, on_staging, existing])
+    p(pr: pr.number, on_staging: on_staging, labels: existing)
     if on_staging && !existing.include?(STAGING_LABEL)
       puts "adding #{STAGING_LABEL} to PR #{pr.number}"
       GH.issues.labels.add(owner_name, repo['name'], pr.number, STAGING_LABEL)
@@ -122,6 +122,8 @@ end
 
 post '/staged' do
   payload = JSON.parse(request.body.read)
-  apply_staging_label(payload)
-  'done'
+  Thread.new do
+    apply_staging_label(payload)
+  end
+  'queued'
 end
