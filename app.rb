@@ -2,6 +2,8 @@ require 'sinatra'
 require 'json'
 require 'github_api'
 require 'pp'
+require_relative 'jobs/staged_job'
+require_relative 'jobs/plus_one_job'
 
 LABELS = ['+1', '+2']
 THUMB_REGEX = /:\+1:|^\+1|\u{1F44D}/
@@ -104,15 +106,7 @@ end
 
 post '/plusone' do
   payload = JSON.parse(request.body.read)
-  fork do
-    sleep 0.5 # give their API just a bit to get caught up
-    case payload['action']
-    when 'opened'
-      assign_owner(payload)
-    when 'created', 'submitted'
-      update_labels(payload)
-    end
-  end
+  PlusOneJob.perform_async(payload)
   'done'
 end
 
@@ -122,8 +116,6 @@ end
 
 post '/staged' do
   payload = JSON.parse(request.body.read)
-  Thread.new do
-    apply_staging_label(payload)
-  end
+  StagedJob.perform_async(payload)
   'queued'
 end
