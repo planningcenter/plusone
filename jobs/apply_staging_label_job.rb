@@ -1,7 +1,7 @@
 require 'sidekiq'
 require_relative '../app'
 
-class StagedJob
+class ApplyStagingLabelJob
   include Sidekiq::Worker
 
   def perform(payload)
