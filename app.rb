@@ -17,10 +17,9 @@ get '/' do
   'https://github.com/seven1m/plusone'
 end
 
-def count_thumbs(owner, repo, number)
+def get_thumbs(owner, repo, number)
   comments = GH.issues.comments.list(owner, repo, number: number)
   thumbs = comments.select { |c| c['body'] =~ THUMB_REGEX }
-  thumbs.uniq { |c| c['user']['login'] }.size
 end
 
 def get_labels(owner, repo, number)
@@ -38,11 +37,10 @@ def get_reviews(owner, repo, number)
   JSON.parse(conn.get("/repos/#{owner}/#{repo}/pulls/#{number}/reviews?access_token=#{ENV['GH_AUTH_TOKEN']}").body)
 end
 
-def count_approvals(owner, repo, number)
+def get_approvals(owner, repo, number)
   approvals = get_reviews(owner, repo, number).select do |review|
     review['state'].to_s.downcase == 'approved' || review['body'].to_s =~ THUMB_REGEX
   end
-  approvals.size
 end
 
 def assign_owner(payload)
@@ -62,7 +60,11 @@ def update_labels(payload)
   return unless (number = payload.fetch('issue', {})['number'] || payload.fetch('pull_request', {})['number'])
   return unless (repo = payload['repository'])
   return unless (owner = repo.fetch('owner', {})['login'])
-  actual_count = count_thumbs(owner, repo['name'], number) + count_approvals(owner, repo['name'], number)
+
+  thumbs = get_thumbs(owner, repo['name'], number)
+  approvals = get_approvals(owner, repo['name'], number)
+  actual_count = (thumbs + approvals).uniq { |o| o['user']['login'] }.size
+
   count = [LABELS.size, actual_count].min
   return if count == 0
   label = "+#{count}"
