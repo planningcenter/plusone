@@ -5,11 +5,14 @@ require 'pp'
 require_relative 'jobs/apply_staging_label_job'
 require_relative 'jobs/assign_owner_job'
 require_relative 'jobs/update_labels_job'
+require_relative 'jobs/update_pending_checks_job'
 
 LABELS = ['+1', '+2']
 THUMB_REGEX = /:\+1:|^\+1|\u{1F44D}/
 STAGING_BRANCH = 'staging'
 STAGING_LABEL = 'Staging'
+PENDING_CHECKS_LABEL = 'PENDING CHECKS'
+NOT_READY_LABEL = 'NOT READY'
 
 GH = Github.new(oauth_token: ENV['GH_AUTH_TOKEN'])
 
@@ -103,6 +106,25 @@ def apply_staging_label(payload)
   end
 end
 
+def update_pending_checks(payload)
+  return unless (repo = payload['repository'])
+  return unless (owner = repo.fetch('owner', {}))
+  return unless (owner_name = owner['login'] || owner['name'])
+  return unless ['success', 'failure', 'error'].include? payload['state']
+
+  GH.pull_requests.list(owner_name, repo['name']).each do |pr|
+    next unless pr.dig(:head, :sha) == payload['sha']
+    next unless pr['labels'].map { |l| l[:name].upcase }.include? PENDING_CHECKS_LABEL
+
+    if payload['state'] == 'success'
+      GH.issues.labels.remove(owner_name, repo['name'], pr['number'], NOT_READY_LABEL)
+      GH.issues.labels.remove(owner_name, repo['name'], pr['number'], PENDING_CHECKS_LABEL)
+    else
+      GH.issues.labels.add(owner_name, repo['name'], pr['number'], NOT_READY_LABEL)
+    end
+  end 
+end
+
 get '/plusone' do
   'Create a GitHub webhook pointing at this URL with these events selected: Pull Request, Issue comment, Pull Request review comment'
 end
@@ -127,5 +149,16 @@ post '/staged' do
   payload = JSON.parse(request.body.read)
 
   ApplyStagingLabelJob.perform_async(payload)
+  'queued'
+end
+
+get '/pending_checks' do
+  'Create a GitHub webhook pointing at this URL with these events selected: Status'
+end
+
+post '/pending_checks' do
+  payload = JSON.parse(request.body.read)
+
+  UpdatePendingChecksJob.perform_async(payload)
   'queued'
 end
