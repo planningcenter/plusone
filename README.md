@@ -34,7 +34,7 @@ Add a webhook to your repo pointing to `http://your-app.herokuapp.com/staged` wi
 * Push
 
 ### Pending Checks Label
-This webhooks adds/removes the "`NOT READY`" label based on status check results of pull requests with the "`PENDING CHECKS`" label. If checks fail, it adds the "`NOT READY`" label. If they pass, it removes "`PENDING CHECKS`" and "`NOT READY`".
+This webhook adds/removes the "`NOT READY`" label based on status check results of pull requests with the "`PENDING CHECKS`" label. If checks fail, it adds the "`NOT READY`" label. If they pass, it removes "`PENDING CHECKS`" and "`NOT READY`".
 
 Add a webhook to your repo pointing to `http://your-app.herokuapp.com/pending_checks` with the Status event selected.
 
