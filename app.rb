@@ -125,8 +125,8 @@ def update_pending_checks(payload)
     if payload['state'] == 'success'
       state = get_ref_status(owner_name, repo['name'], payload['sha'])['state']
       if state == 'success'
-        GH.issues.labels.remove(owner_name, repo['name'], pr['number'], NOT_READY_LABEL)
-        GH.issues.labels.remove(owner_name, repo['name'], pr['number'], PENDING_CHECKS_LABEL)
+        GH.issues.labels.remove(owner_name, repo['name'], pr['number'], label_name: NOT_READY_LABEL)
+        GH.issues.labels.remove(owner_name, repo['name'], pr['number'], label_name: PENDING_CHECKS_LABEL)
       end
     else
       GH.issues.labels.add(owner_name, repo['name'], pr['number'], NOT_READY_LABEL)
