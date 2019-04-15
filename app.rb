@@ -14,7 +14,7 @@ STAGING_LABEL = 'Staging'
 PENDING_CHECKS_LABEL = 'PENDING CHECKS'
 NOT_READY_LABEL = 'NOT READY'
 
-GH = Github.new(oauth_token: ENV['GH_AUTH_TOKEN'])
+GH = Github.new(oauth_token: ENV['GH_AUTH_TOKEN'], auto_pagination: true)
 
 get '/' do
   'https://github.com/seven1m/plusone'
@@ -38,6 +38,12 @@ def get_reviews(owner, repo, number)
     headers: { Accept: 'application/vnd.github.black-cat-preview+json' }
   )
   JSON.parse(conn.get("/repos/#{owner}/#{repo}/pulls/#{number}/reviews?access_token=#{ENV['GH_AUTH_TOKEN']}").body)
+end
+
+def get_ref_status(owner, repo, ref)
+  # github_api doesn't support this
+  conn = Faraday.new(url: 'https://api.github.com')
+  JSON.parse(conn.get("/repos/#{owner}/#{repo}/commits/#{ref}/status?access_token=#{ENV['GH_AUTH_TOKEN']}").body)
 end
 
 def get_approvals(owner, repo, number)
@@ -117,8 +123,11 @@ def update_pending_checks(payload)
     next unless pr['labels'].map { |l| l[:name].upcase }.include? PENDING_CHECKS_LABEL
 
     if payload['state'] == 'success'
-      GH.issues.labels.remove(owner_name, repo['name'], pr['number'], NOT_READY_LABEL)
-      GH.issues.labels.remove(owner_name, repo['name'], pr['number'], PENDING_CHECKS_LABEL)
+      state = get_ref_status(owner_name, repo['name'], payload['sha'])['state']
+      if state == 'success'
+        GH.issues.labels.remove(owner_name, repo['name'], pr['number'], NOT_READY_LABEL)
+        GH.issues.labels.remove(owner_name, repo['name'], pr['number'], PENDING_CHECKS_LABEL)
+      end
     else
       GH.issues.labels.add(owner_name, repo['name'], pr['number'], NOT_READY_LABEL)
     end
