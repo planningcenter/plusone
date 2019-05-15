@@ -179,7 +179,7 @@ end
 post '/gemfile-next' do
   payload = JSON.parse(request.body.read)
   return 'done' if payload['action'] != 'opened'
-  login = payload['pull_request']['user']['login']
+  login = payload['repository']['owner']['login']
   repo = payload['repository']['name']
   num = payload['number']
   files = GH.pull_requests.files(login, repo, num).map { |f| f['filename'] }
