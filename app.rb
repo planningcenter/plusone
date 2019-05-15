@@ -171,3 +171,20 @@ post '/pending_checks' do
   UpdatePendingChecksJob.perform_async(payload)
   'queued'
 end
+
+get '/gemfile-next' do
+  'Create a GitHub webhook pointing at this URL with these events selected: Pull Request'
+end
+
+post '/gemfile-next' do
+  payload = JSON.parse(request.body.read)
+  return 'done' if payload['action'] != 'opened'
+  login = payload['pull_request']['user']['login']
+  repo = payload['repository']['name']
+  num = payload['number']
+  files = GH.pull_requests.files(login, repo, num).map { |f| f['filename'] }
+  if files.include?('Gemfile') && !files.include?('Gemfile.next')
+    GH.issues.comments.create(login, repo, num, body: 'It looks like you updated Gemfile but not Gemfile.next. This is your friendly reminder! :hugs:')
+  end
+  'done'
+end
