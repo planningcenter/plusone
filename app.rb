@@ -22,7 +22,7 @@ end
 
 def get_thumbs(owner, repo, number)
   comments = GH.issues.comments.list(owner, repo, number: number)
-  thumbs = comments.select { |c| c['body'] =~ THUMB_REGEX }
+  comments.select { |c| c['body'] =~ THUMB_REGEX }
 end
 
 def get_labels(owner, repo, number)
@@ -31,24 +31,13 @@ def get_labels(owner, repo, number)
     .map { |l| l['name'] }
 end
 
-def get_reviews(owner, repo, number)
-  # github_api doesn't support this yet
-  conn = Faraday.new(
-    url: 'https://api.github.com',
-    headers: { Accept: 'application/vnd.github.black-cat-preview+json' }
-  )
-  JSON.parse(conn.get("/repos/#{owner}/#{repo}/pulls/#{number}/reviews?access_token=#{ENV['GH_AUTH_TOKEN']}").body)
-end
-
 def get_ref_status(owner, repo, ref)
-  # github_api doesn't support this
-  conn = Faraday.new(url: 'https://api.github.com')
-  JSON.parse(conn.get("/repos/#{owner}/#{repo}/commits/#{ref}/status?access_token=#{ENV['GH_AUTH_TOKEN']}").body)
+  GH.repos.statuses.list(owner, repo, ref).first&.state
 end
 
 def get_approvals(owner, repo, number)
-  approvals = get_reviews(owner, repo, number).select do |review|
-    review['state'].to_s.downcase == 'approved' || review['body'].to_s =~ THUMB_REGEX
+  GH.pull_requests.reviews.list(owner, repo, number).select do |review|
+    review.state.to_s.downcase == 'approved' || review.body.to_s =~ THUMB_REGEX
   end
 end
 
@@ -123,7 +112,7 @@ def update_pending_checks(payload)
     next unless pr['labels'].map { |l| l[:name].upcase }.include? PENDING_CHECKS_LABEL
 
     if payload['state'] == 'success'
-      state = get_ref_status(owner_name, repo['name'], payload['sha'])['state']
+      state = get_ref_status(owner_name, repo['name'], payload['sha'])
       if state == 'success'
         GH.issues.labels.remove(owner_name, repo['name'], pr['number'], label_name: NOT_READY_LABEL)
         GH.issues.labels.remove(owner_name, repo['name'], pr['number'], label_name: PENDING_CHECKS_LABEL)
