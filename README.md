@@ -40,4 +40,4 @@ Add a webhook to your repo pointing to `http://your-app.herokuapp.com/pending_ch
 
 ## Copyright & License
 
-Copyright (c) Tim Morgan, licensed MIT. See LICENSE file in this repo.
+Copyright (c) Planning Center, licensed MIT. See LICENSE file in this repo.
